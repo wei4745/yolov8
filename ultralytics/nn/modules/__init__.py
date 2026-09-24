@@ -59,6 +59,7 @@ from .block import (
     ResNetLayer,
     SCDown,
     TorchVision,
+    CBAM,
 )
 from .conv import (
     CBAM,
@@ -108,6 +109,7 @@ from .transformer import (
     TransformerEncoderLayer,
     TransformerLayer,
 )
+from .coordatt import CoordAtt
 
 __all__ = (
     "AIFI",
@@ -193,4 +195,6 @@ __all__ = (
     "YOLOESegment26",
     "v10Detect",
     "EMA",
+    "CoordAtt",
+    "CBAM",
 )

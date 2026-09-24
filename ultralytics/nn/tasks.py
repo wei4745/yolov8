@@ -77,8 +77,12 @@ from ultralytics.nn.modules import (
     YOLOEDetect,
     YOLOESegment,
     YOLOESegment26,
-    v10Detect, EMA,
+    v10Detect,
+    EMA,
+
 )
+from ultralytics.nn.modules.coordatt import CoordAtt
+from ultralytics.nn.modules.block import CBAM
 from ultralytics.utils import (
     DEFAULT_CFG_DICT,
     LOGGER,
@@ -2192,6 +2196,12 @@ def parse_model(d, ch, verbose=True):
             c2 = c1  # EMA 输入输出通道数相同
             # args 里如果传了 factor，就保留；没有就用默认 32
             args = [c1, *args] if args else [c1]
+        elif m is CoordAtt:
+            args = [ch[f], ch[f]]  # 输入通道 = 输出通道
+        elif m is CBAM:
+            c1 = ch[f]
+            c2 = c1  # 非常重要 CBAM 输出通道 = 输入通道
+            args = [c1] if len(args) <= 1 else [c1, args[1]]
         else:
             c2 = ch[f]
 

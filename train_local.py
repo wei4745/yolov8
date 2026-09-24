@@ -3,11 +3,11 @@ from ultralytics import YOLO
 
 # ==================== 统一超参数 ====================
 # 放在ultralytics同级目录
-MODEL_CFG = "ultralytics/cfg/models/v8/yolov8s_EMA.yaml"  # 不加载预训练权重
-NAME = "yolov8s_ema_test"  # 改名字区分
+MODEL_CFG = "ultralytics/cfg/models/v8/yolov8s-cbam.yaml"  # 不加载预训练权重
+NAME = "yolov8s_cbam_test"  # 改名字区分
 
 PROJECT = "runs/blueberry"
-DATA_YAML = "ultralytics/cfg/datasets/blueberry.yaml"
+DATA_YAML = "ultralytics/cfg/datasets/blueberry_local.yaml"
 EPOCHS = 256
 IMGSZ = 1024
 BATCH = 2
