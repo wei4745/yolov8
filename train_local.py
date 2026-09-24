@@ -1,10 +1,9 @@
-# train_yolov8s_blueberry.py
 from ultralytics import YOLO
 
-# ==================== 统一超参数 ====================
+# 统一超参数
 # 放在ultralytics同级目录
-MODEL_CFG = "ultralytics/cfg/models/v8/yolov8s-cbam.yaml"  # 不加载预训练权重
-NAME = "yolov8s_cbam_test"  # 改名字区分
+MODEL_CFG = "ultralytics/cfg/models/v8/yolov8s-gam.yaml"  # 不加载预训练权重
+NAME = "yolov8s_gam_test"  # 改名字区分
 
 PROJECT = "runs/blueberry"
 DATA_YAML = "ultralytics/cfg/datasets/blueberry_local.yaml"
@@ -16,7 +15,6 @@ WORKERS = 0
 
 
 def main():
-    # 从 yaml 构建模型（scratch，不使用预训练权重）
     model = YOLO(MODEL_CFG)
 
     # 开始训练

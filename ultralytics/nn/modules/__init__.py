@@ -77,6 +77,7 @@ from .conv import (
     RepConv,
     SpatialAttention,
     EMA,
+    ECA,
 )
 from .head import (
     OBB,
@@ -110,6 +111,7 @@ from .transformer import (
     TransformerLayer,
 )
 from .coordatt import CoordAtt
+from .attention import GAM
 
 __all__ = (
     "AIFI",
@@ -197,4 +199,6 @@ __all__ = (
     "EMA",
     "CoordAtt",
     "CBAM",
+    "ECA",
+    "GAM",
 )
