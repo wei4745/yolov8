@@ -16,6 +16,14 @@ WORKERS = 0
 
 def main():
     model = YOLO(MODEL_CFG)
+    criterion = model.model.init_criterion()
+
+    print("=" * 50)
+    print("NWD 启用状态检查：")
+    print(f"nwd_loss   : {criterion.bbox_loss.nwd_loss}")
+    print(f"iou_ratio  : {criterion.bbox_loss.iou_ratio}")
+    print(f"constant   : {criterion.bbox_loss.constant}")
+    print("=" * 50)
 
     # 开始训练
     model.train(
@@ -60,6 +68,7 @@ def main():
         verbose=True,
         seed=17,  # 固定随机种子，方便复现
         deterministic=True,
+
     )
 
 
