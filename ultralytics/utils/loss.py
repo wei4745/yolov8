@@ -159,7 +159,12 @@ class BboxLoss(nn.Module):
         fg_mask = fg_mask.nonzero(as_tuple=True)  # index once; long-index gathers and their backward do not sync
         weight = target_scores[fg_mask].sum(-1, keepdim=True)
 
+        """
+        开关 use CIoU (default), or SIoU
+        """
         iou = bbox_iou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, CIoU=True)
+        # iou = bbox_iou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, SIoU=True)
+
         loss_iou = ((1.0 - iou) * weight).sum() / target_scores_sum
 
         if self.nwd_loss:
@@ -407,7 +412,7 @@ class v8DetectionLoss:
         )
         self.bbox_loss = BboxLoss(
             reg_max=m.reg_max,
-            nwd_loss=False,  # 可调
+            nwd_loss=False,  # 开关
             iou_ratio=0.5,  # 参数可调
             constant=12.8  # 可调
         ).to(device)
