@@ -15,7 +15,7 @@ from ultralytics.utils.ops import crop_mask, xywh2xyxy, xyxy2xywh
 from ultralytics.utils.tal import RotatedTaskAlignedAssigner, TaskAlignedAssigner, dist2bbox, dist2rbox, make_anchors
 from ultralytics.utils.torch_utils import autocast
 
-from .metrics import bbox_iou, probiou
+from .metrics import bbox_iou, probiou, piou
 from .tal import bbox2dist, rbox2dist
 
 
@@ -160,10 +160,13 @@ class BboxLoss(nn.Module):
         weight = target_scores[fg_mask].sum(-1, keepdim=True)
 
         """
-        开关 use CIoU (default), or SIoU
+        开关 use CIoU (default), or SIoU, or PIoU v2
         """
-        iou = bbox_iou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, CIoU=True)
+        # iou = bbox_iou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, CIoU=True)
         # iou = bbox_iou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, SIoU=True)
+
+        # PIoU v2 非单调聚焦
+        iou = 1 - piou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, PIoU2=True)
 
         loss_iou = ((1.0 - iou) * weight).sum() / target_scores_sum
 
