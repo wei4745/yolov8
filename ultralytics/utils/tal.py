@@ -29,14 +29,14 @@ class TaskAlignedAssigner(nn.Module):
     """
 
     def __init__(
-        self,
-        topk: int = 13,
-        num_classes: int = 80,
-        alpha: float = 1.0,
-        beta: float = 6.0,
-        stride: list | None = None,
-        eps: float = 1e-9,
-        topk2=None,
+            self,
+            topk: int = 13,
+            num_classes: int = 80,
+            alpha: float = 1.0,
+            beta: float = 6.0,
+            stride: list | None = None,
+            eps: float = 1e-9,
+            topk2=None,
     ):
         """Initialize a TaskAlignedAssigner object with customizable hyperparameters.
 
@@ -119,12 +119,12 @@ class TaskAlignedAssigner(nn.Module):
         try:
             for i, self.n_max_boxes in enumerate(last_gt_idx):
                 result = self._forward(
-                    pd_scores[i : i + 1],
-                    pd_bboxes[i : i + 1],
+                    pd_scores[i: i + 1],
+                    pd_bboxes[i: i + 1],
                     anc_points,
-                    gt_labels[i : i + 1, : self.n_max_boxes],
-                    gt_bboxes[i : i + 1, : self.n_max_boxes],
-                    mask_gt[i : i + 1, : self.n_max_boxes],
+                    gt_labels[i: i + 1, : self.n_max_boxes],
+                    gt_bboxes[i: i + 1, : self.n_max_boxes],
+                    mask_gt[i: i + 1, : self.n_max_boxes],
                 )
                 if results is None:
                     results = tuple(x.new_empty((bs, *x.shape[1:])) for x in result)
@@ -238,7 +238,13 @@ class TaskAlignedAssigner(nn.Module):
         Returns:
             (torch.Tensor): IoU values between each pair of boxes.
         """
-        return bbox_iou(gt_bboxes, pd_bboxes, xywh=False, CIoU=True).squeeze(-1).clamp_(0)
+        # 建议同时替换
+        # return bbox_iou(gt_bboxes, pd_bboxes, xywh=False, CIoU=True).squeeze(-1).clamp_(0)
+        iou = bbox_iou(gt_bboxes, pd_bboxes, xywh=False, EIoU=True, Focal=False)
+        # Focal 时 bbox_iou 返回 (iou_term, iou^gamma) 元组，取第一个作为 overlaps
+        if isinstance(iou, tuple):
+            return iou[0].squeeze(-1).clamp_(0)
+        return iou.squeeze(-1).clamp_(0)
 
     def select_topk_candidates(self, metrics, topk_mask=None):
         """Select the top-k candidates based on the given metrics.
@@ -479,11 +485,11 @@ def dist2rbox(pred_dist, pred_angle, anchor_points, dim=-1):
 
 
 def rbox2dist(
-    target_bboxes: torch.Tensor,
-    anchor_points: torch.Tensor,
-    target_angle: torch.Tensor,
-    dim: int = -1,
-    reg_max: int | None = None,
+        target_bboxes: torch.Tensor,
+        anchor_points: torch.Tensor,
+        target_angle: torch.Tensor,
+        dim: int = -1,
+        reg_max: int | None = None,
 ):
     """Transform rotated bounding box (xywh) to distance (ltrb). This is the inverse of dist2rbox.
 

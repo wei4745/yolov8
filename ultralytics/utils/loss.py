@@ -160,15 +160,26 @@ class BboxLoss(nn.Module):
         weight = target_scores[fg_mask].sum(-1, keepdim=True)
 
         """
-        开关 use CIoU (default), or SIoU, or PIoU v2
+        开关 use CIoU (default), or SIoU, or PIoU v2, or EIoU
         """
         # iou = bbox_iou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, CIoU=True)
         # iou = bbox_iou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, SIoU=True)
 
         # PIoU v2 非单调聚焦
-        iou = 1 - piou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, PIoU2=True)
+        # iou = 1 - piou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, PIoU2=True)
 
-        loss_iou = ((1.0 - iou) * weight).sum() / target_scores_sum
+        # 这里：EIoU=True, Focal=True 使用 Focal-EIoU；EIoU=True, Focal=False 使用纯 EIoU
+        iou = bbox_iou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, EIoU=True, Focal=False)
+
+        # iou = bbox_iou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, EIoU=True, Focal=True)
+
+        if type(iou) is tuple:
+            if len(iou) == 2:
+                loss_iou = ((1.0 - iou[0]) * iou[1].detach() * weight).sum() / target_scores_sum
+            else:
+                loss_iou = (iou[0] * iou[1] * weight).sum() / target_scores_sum
+        else:
+            loss_iou = ((1.0 - iou) * weight).sum() / target_scores_sum
 
         if self.nwd_loss:
             nwd = self.wasserstein_loss(pred_bboxes[fg_mask], target_bboxes[fg_mask])

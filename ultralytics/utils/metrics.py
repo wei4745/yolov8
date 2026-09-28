@@ -111,7 +111,13 @@ def bbox_iou(
         CIoU: bool = False,
         SIoU: bool = False,  # 新增
         eps: float = 1e-7,
-) -> torch.Tensor:
+
+        EIoU: bool = False,  # 新增EIoU相关
+        Focal: bool = False,
+        gamma: float = 0.5,
+        alpha: float = 1.0,
+) -> torch.Tensor | tuple:
+    # return tuple if use Focal-EIoU
     """Calculate the Intersection over Union (IoU) between bounding boxes.
 
     This function supports various shapes for `box1` and `box2` as long as the last dimension is 4. For instance, you
@@ -153,7 +159,8 @@ def bbox_iou(
 
     # IoU
     iou = inter / union
-    if CIoU or DIoU or GIoU or SIoU:
+
+    if CIoU or DIoU or GIoU or SIoU or EIoU:
         cw = b1_x2.maximum(b2_x2) - b1_x1.minimum(b2_x1)  # convex (smallest enclosing box) width
         ch = b1_y2.maximum(b2_y2) - b1_y1.minimum(b2_y1)  # convex height
 
@@ -175,7 +182,7 @@ def bbox_iou(
             shape_cost = torch.pow(1 - torch.exp(-1 * omiga_w), 4) + torch.pow(1 - torch.exp(-1 * omiga_h), 4)
             return iou - 0.5 * (distance_cost + shape_cost)  # SIoU
 
-        if CIoU or DIoU:  # Distance or Complete IoU https://arxiv.org/abs/1911.08287v1
+        if CIoU or DIoU or EIoU:  # Distance or Complete IoU https://arxiv.org/abs/1911.08287v1
             c2 = cw.pow(2) + ch.pow(2) + eps  # convex diagonal squared
             rho2 = (
                            (b2_x1 + b2_x2 - b1_x1 - b1_x2).pow(2) + (b2_y1 + b2_y2 - b1_y1 - b1_y2).pow(2)
@@ -185,6 +192,15 @@ def bbox_iou(
                 with torch.no_grad():
                     alpha = v / (1 - iou + v + eps)
                 return iou - (rho2 / c2 + v * alpha)  # CIoU
+            elif EIoU:
+                rho_w2 = ((b2_x2 - b2_x1) - (b1_x2 - b1_x1)) ** 2
+                rho_h2 = ((b2_y2 - b2_y1) - (b1_y2 - b1_y1)) ** 2
+                cw2 = torch.pow(cw ** 2 + eps, alpha)
+                ch2 = torch.pow(ch ** 2 + eps, alpha)
+                if Focal:
+                    return iou - (rho2 / c2 + rho_w2 / cw2 + rho_h2 / ch2), torch.pow(iou, gamma)  # Focal-EIoU
+                else:
+                    return iou - (rho2 / c2 + rho_w2 / cw2 + rho_h2 / ch2)  # EIoU
             return iou - rho2 / c2  # DIoU
         c_area = cw * ch + eps  # convex area
         return iou - (c_area - union) / c_area  # GIoU https://arxiv.org/pdf/1902.09630.pdf
