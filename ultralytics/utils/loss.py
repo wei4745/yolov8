@@ -162,16 +162,15 @@ class BboxLoss(nn.Module):
         """
         开关 use CIoU (default), or SIoU, or PIoU v2, or EIoU
         """
-        # iou = bbox_iou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, CIoU=True)
+        iou = bbox_iou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, CIoU=True)
+
         # iou = bbox_iou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, SIoU=True)
 
         # PIoU v2 非单调聚焦
         # iou = 1 - piou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, PIoU2=True)
 
         # 这里：EIoU=True, Focal=True 使用 Focal-EIoU；EIoU=True, Focal=False 使用纯 EIoU
-        iou = bbox_iou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, EIoU=True, Focal=False)
-
-        # iou = bbox_iou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, EIoU=True, Focal=True)
+        # iou = bbox_iou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, EIoU=True, Focal=False)
 
         if type(iou) is tuple:
             if len(iou) == 2:
@@ -426,7 +425,7 @@ class v8DetectionLoss:
         )
         self.bbox_loss = BboxLoss(
             reg_max=m.reg_max,
-            nwd_loss=False,  # 开关
+            nwd_loss=False,  # NWD开关
             iou_ratio=0.5,  # 参数可调
             constant=12.8  # 可调
         ).to(device)

@@ -238,12 +238,18 @@ class TaskAlignedAssigner(nn.Module):
         Returns:
             (torch.Tensor): IoU values between each pair of boxes.
         """
-        # 建议同时替换
         # return bbox_iou(gt_bboxes, pd_bboxes, xywh=False, CIoU=True).squeeze(-1).clamp_(0)
-        iou = bbox_iou(gt_bboxes, pd_bboxes, xywh=False, EIoU=True, Focal=False)
+        iou = bbox_iou(gt_bboxes, pd_bboxes, xywh=False, CIoU=True)
+
+        # EIoU, SIoU建议同时替换
+        # iou = bbox_iou(gt_bboxes, pd_bboxes, xywh=False, EIoU=True, Focal=False)
+
+        # iou = bbox_iou(gt_bboxes, pd_bboxes, xywh=False, SIoU=True)
+
         # Focal 时 bbox_iou 返回 (iou_term, iou^gamma) 元组，取第一个作为 overlaps
         if isinstance(iou, tuple):
             return iou[0].squeeze(-1).clamp_(0)
+
         return iou.squeeze(-1).clamp_(0)
 
     def select_topk_candidates(self, metrics, topk_mask=None):
