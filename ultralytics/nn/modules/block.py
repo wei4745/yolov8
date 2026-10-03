@@ -2254,7 +2254,7 @@ class MobileOneBlock(nn.Module):
                 beta = branch.bn.bias
                 eps = branch.bn.eps
             else:
-                # 兼容旧版 unnamed Sequential
+                # 兼容旧版 unnamed  Sequential
                 kernel = branch[0].weight
                 running_mean = branch[1].running_mean
                 running_var = branch[1].running_var
