@@ -3,7 +3,7 @@ import copy
 
 import torch
 from thop import profile
-import torch.nn as nn
+from torch import nn
 
 from ultralytics import YOLO
 
@@ -15,10 +15,10 @@ def parse_args():
 
 
 def reparameterize_model(model: nn.Module) -> nn.Module:
-    """官方风格，遍历所有 MobileOneBlock 并融合。"""
+    """官方风格，遍历所有 MobileOneBlock 并融合。."""
     model = copy.deepcopy(model)
     for module in model.modules():
-        if hasattr(module, 'reparameterize'):
+        if hasattr(module, "reparameterize"):
             module.reparameterize()
     return model
 
@@ -53,9 +53,7 @@ def main():
     print(f"推理时间 : {metrics.speed['inference']:.2f} ms")
     print(f"后处理   : {metrics.speed['postprocess']:.2f} ms")
 
-    total_ms = (metrics.speed['preprocess'] +
-                metrics.speed['inference'] +
-                metrics.speed['postprocess'])
+    total_ms = metrics.speed["preprocess"] + metrics.speed["inference"] + metrics.speed["postprocess"]
     print(f"单图总耗时 : {total_ms:.2f} ms")
     # 真实FPS：包含预处理推理后处理
     print(f"FPS: {1000 / total_ms:.1f}")
@@ -79,5 +77,5 @@ def main():
         print(f"类别{idx:2d} mAP50‑95: {ap:.4f}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

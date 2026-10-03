@@ -17,12 +17,14 @@ Examples:
     >>> subprocess.run(f"onnxslim {f} {f} && open {f}", shell=True, check=True)  # pip install onnxslim
 """
 
+from .attention import GAM
 from .block import (
     C1,
     C2,
     C2PSA,
     C3,
     C3TR,
+    CBAM,
     CIB,
     DFL,
     ELAN1,
@@ -59,10 +61,11 @@ from .block import (
     ResNetLayer,
     SCDown,
     TorchVision,
-    CBAM,
 )
 from .conv import (
     CBAM,
+    ECA,
+    EMA,
     ChannelAttention,
     Concat,
     Conv,
@@ -76,9 +79,8 @@ from .conv import (
     LightConv,
     RepConv,
     SpatialAttention,
-    EMA,
-    ECA,
 )
+from .coordatt import CoordAtt
 from .head import (
     OBB,
     OBB26,
@@ -110,8 +112,6 @@ from .transformer import (
     TransformerEncoderLayer,
     TransformerLayer,
 )
-from .coordatt import CoordAtt
-from .attention import GAM
 
 __all__ = (
     "AIFI",
@@ -123,7 +123,10 @@ __all__ = (
     "CBAM",
     "CIB",
     "DFL",
+    "ECA",
     "ELAN1",
+    "EMA",
+    "GAM",
     "MLP",
     "OBB",
     "OBB26",
@@ -154,6 +157,7 @@ __all__ = (
     "Conv",
     "Conv2",
     "ConvTranspose",
+    "CoordAtt",
     "DWConv",
     "DWConvTranspose2d",
     "DeformableTransformerDecoder",
@@ -196,9 +200,4 @@ __all__ = (
     "YOLOESegment",
     "YOLOESegment26",
     "v10Detect",
-    "EMA",
-    "CoordAtt",
-    "CBAM",
-    "ECA",
-    "GAM",
 )

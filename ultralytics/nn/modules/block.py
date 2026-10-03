@@ -4,13 +4,13 @@
 from __future__ import annotations
 
 import math
-from typing import Tuple
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
 from ultralytics.utils.torch_utils import fuse_conv_and_bn
+
 from .conv import Conv, DWConv, GhostConv, LightConv, RepConv, autopad
 from .transformer import TransformerBlock
 
@@ -147,15 +147,15 @@ class HGBlock(nn.Module):
     """
 
     def __init__(
-            self,
-            c1: int,
-            cm: int,
-            c2: int,
-            k: int = 3,
-            n: int = 6,
-            lightconv: bool = False,
-            shortcut: bool = False,
-            act: nn.Module | None = None,
+        self,
+        c1: int,
+        cm: int,
+        c2: int,
+        k: int = 3,
+        n: int = 6,
+        lightconv: bool = False,
+        shortcut: bool = False,
+        act: nn.Module | None = None,
     ):
         """Initialize HGBlock with specified parameters.
 
@@ -461,7 +461,7 @@ class Bottleneck(nn.Module):
     """Standard bottleneck."""
 
     def __init__(
-            self, c1: int, c2: int, shortcut: bool = True, g: int = 1, k: tuple[int, int] = (3, 3), e: float = 0.5
+        self, c1: int, c2: int, shortcut: bool = True, g: int = 1, k: tuple[int, int] = (3, 3), e: float = 0.5
     ):
         """Initialize a standard bottleneck module.
 
@@ -612,7 +612,7 @@ class MaxSigmoidAttnBlock(nn.Module):
 
         aw = torch.einsum("bmchw,bnmc->bmhwn", embed, guide)
         aw = aw.max(dim=-1)[0]
-        aw = aw / (self.hc ** 0.5)
+        aw = aw / (self.hc**0.5)
         aw = aw + self.bias[None, :, None, None]
         aw = aw.sigmoid() * self.scale
 
@@ -626,16 +626,16 @@ class C2fAttn(nn.Module):
     """C2f module with an additional attn module."""
 
     def __init__(
-            self,
-            c1: int,
-            c2: int,
-            n: int = 1,
-            ec: int = 128,
-            nh: int = 1,
-            gc: int = 512,
-            shortcut: bool = False,
-            g: int = 1,
-            e: float = 0.5,
+        self,
+        c1: int,
+        c2: int,
+        n: int = 1,
+        ec: int = 128,
+        nh: int = 1,
+        gc: int = 512,
+        shortcut: bool = False,
+        g: int = 1,
+        e: float = 0.5,
     ):
         """Initialize C2f module with attention mechanism.
 
@@ -692,7 +692,7 @@ class ImagePoolingAttn(nn.Module):
     """ImagePoolingAttn: Enhance the text embeddings with image-aware information."""
 
     def __init__(
-            self, ec: int = 256, ch: tuple[int, ...] = (), ct: int = 512, nh: int = 8, k: int = 3, scale: bool = False
+        self, ec: int = 256, ch: tuple[int, ...] = (), ct: int = 512, nh: int = 8, k: int = 3, scale: bool = False
     ):
         """Initialize ImagePoolingAttn module.
 
@@ -732,7 +732,7 @@ class ImagePoolingAttn(nn.Module):
         """
         bs = x[0].shape[0]
         assert len(x) == self.nf
-        num_patches = self.k ** 2
+        num_patches = self.k**2
         x = [pool(proj(x)).view(bs, -1, num_patches) for (x, proj, pool) in zip(x, self.projections, self.im_pools)]
         x = torch.cat(x, dim=-1).transpose(1, 2)
         q = self.query(text)
@@ -745,7 +745,7 @@ class ImagePoolingAttn(nn.Module):
         v = v.reshape(bs, -1, self.nh, self.hc)
 
         aw = torch.einsum("bnmc,bkmc->bmnk", q, k)
-        aw = aw / (self.hc ** 0.5)
+        aw = aw / (self.hc**0.5)
         aw = F.softmax(aw, dim=-1)
 
         x = torch.einsum("bmnk,bkmc->bnmc", aw, v)
@@ -832,7 +832,7 @@ class RepBottleneck(Bottleneck):
     """Rep bottleneck."""
 
     def __init__(
-            self, c1: int, c2: int, shortcut: bool = True, g: int = 1, k: tuple[int, int] = (3, 3), e: float = 0.5
+        self, c1: int, c2: int, shortcut: bool = True, g: int = 1, k: tuple[int, int] = (3, 3), e: float = 0.5
     ):
         """Initialize RepBottleneck.
 
@@ -1073,15 +1073,15 @@ class C3k2(C2f):
     """Faster Implementation of CSP Bottleneck with 2 convolutions."""
 
     def __init__(
-            self,
-            c1: int,
-            c2: int,
-            n: int = 1,
-            c3k: bool = False,
-            e: float = 0.5,
-            attn: bool = False,
-            g: int = 1,
-            shortcut: bool = True,
+        self,
+        c1: int,
+        c2: int,
+        n: int = 1,
+        c3k: bool = False,
+        e: float = 0.5,
+        attn: bool = False,
+        g: int = 1,
+        shortcut: bool = True,
     ):
         """Initialize C3k2 module.
 
@@ -1254,7 +1254,7 @@ class C2fCIB(C2f):
     """
 
     def __init__(
-            self, c1: int, c2: int, n: int = 1, shortcut: bool = False, lk: bool = False, g: int = 1, e: float = 0.5
+        self, c1: int, c2: int, n: int = 1, shortcut: bool = False, lk: bool = False, g: int = 1, e: float = 0.5
     ):
         """Initialize C2fCIB module.
 
@@ -1303,7 +1303,7 @@ class Attention(nn.Module):
         self.num_heads = num_heads
         self.head_dim = dim // num_heads
         self.key_dim = int(self.head_dim * attn_ratio)
-        self.scale = self.key_dim ** -0.5
+        self.scale = self.key_dim**-0.5
         nh_kd = self.key_dim * num_heads
         h = dim + nh_kd * 2
         self.qkv = Conv(dim, h, 1, act=False)
@@ -1601,7 +1601,7 @@ class TorchVision(nn.Module):
     """
 
     def __init__(
-            self, model: str, weights: str = "DEFAULT", unwrap: bool = True, truncate: int = 2, split: bool = False
+        self, model: str, weights: str = "DEFAULT", unwrap: bool = True, truncate: int = 2, split: bool = False
     ):
         """Load the model and weights from torchvision.
 
@@ -1717,7 +1717,7 @@ class AAttn(nn.Module):
             .permute(0, 2, 3, 1)
             .split([self.head_dim, self.head_dim, self.head_dim], dim=2)
         )
-        attn = (q * (self.head_dim ** -0.5)).transpose(-2, -1) @ k
+        attn = (q * (self.head_dim**-0.5)).transpose(-2, -1) @ k
         attn = attn.softmax(dim=-1)
         x = v @ attn.transpose(-2, -1)
         x = x.permute(0, 3, 1, 2)
@@ -1824,17 +1824,17 @@ class A2C2f(nn.Module):
     """
 
     def __init__(
-            self,
-            c1: int,
-            c2: int,
-            n: int = 1,
-            a2: bool = True,
-            area: int = 1,
-            residual: bool = False,
-            mlp_ratio: float = 2.0,
-            e: float = 0.5,
-            g: int = 1,
-            shortcut: bool = True,
+        self,
+        c1: int,
+        c2: int,
+        n: int = 1,
+        a2: bool = True,
+        area: int = 1,
+        residual: bool = False,
+        mlp_ratio: float = 2.0,
+        e: float = 0.5,
+        g: int = 1,
+        shortcut: bool = True,
     ):
         """Initialize Area-Attention C2f module.
 
@@ -2082,10 +2082,11 @@ class RealNVP(nn.Module):
 
 class SAM(nn.Module):
     def __init__(self, bias=False):
-        super(SAM, self).__init__()
+        super().__init__()
         self.bias = bias
-        self.conv = nn.Conv2d(in_channels=2, out_channels=1, kernel_size=7, stride=1, padding=3, dilation=1,
-                              bias=self.bias)
+        self.conv = nn.Conv2d(
+            in_channels=2, out_channels=1, kernel_size=7, stride=1, padding=3, dilation=1, bias=self.bias
+        )
 
     def forward(self, x):
         max_out = torch.max(x, 1)[0].unsqueeze(1)
@@ -2098,13 +2099,13 @@ class SAM(nn.Module):
 
 class CAM(nn.Module):
     def __init__(self, channels, r=16):
-        super(CAM, self).__init__()
+        super().__init__()
         self.channels = channels
         self.r = r
         self.linear = nn.Sequential(
             nn.Linear(in_features=self.channels, out_features=self.channels // self.r, bias=True),
             nn.ReLU(inplace=True),
-            nn.Linear(in_features=self.channels // self.r, out_features=self.channels, bias=True)
+            nn.Linear(in_features=self.channels // self.r, out_features=self.channels, bias=True),
         )
 
     def forward(self, x):
@@ -2119,10 +2120,10 @@ class CAM(nn.Module):
 
 
 class CBAM(nn.Module):
-    """Convolutional Block Attention Module """
+    """Convolutional Block Attention Module."""
 
     def __init__(self, channels, r=16):
-        super(CBAM, self).__init__()
+        super().__init__()
         self.channels = channels
         self.r = r
         self.cam = CAM(channels=self.channels, r=self.r)
@@ -2141,7 +2142,7 @@ class SEBlock(nn.Module):
         self.expand = nn.Conv2d(int(in_channels * rd_ratio), in_channels, 1, bias=True)
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
-        b, c, h, w = inputs.size()
+        _b, c, h, w = inputs.size()
         x = F.avg_pool2d(inputs, kernel_size=[h, w])
         x = self.reduce(x)
         x = F.relu(x)
@@ -2153,17 +2154,19 @@ class SEBlock(nn.Module):
 class MobileOneBlock(nn.Module):
     """MobileOne building block (train multi-branch, inference reparam)."""
 
-    def __init__(self,
-                 in_channels: int,
-                 out_channels: int,
-                 kernel_size: int = 3,
-                 stride: int = 1,
-                 padding: int = 1,
-                 dilation: int = 1,
-                 groups: int = 1,
-                 inference_mode: bool = False,
-                 use_se: bool = False,
-                 num_conv_branches: int = 1) -> None:
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: int = 3,
+        stride: int = 1,
+        padding: int = 1,
+        dilation: int = 1,
+        groups: int = 1,
+        inference_mode: bool = False,
+        use_se: bool = False,
+        num_conv_branches: int = 1,
+    ) -> None:
         super().__init__()
         self.inference_mode = inference_mode
         self.groups = groups
@@ -2177,16 +2180,21 @@ class MobileOneBlock(nn.Module):
         self.activation = nn.ReLU()
 
         if inference_mode:
-            self.reparam_conv = nn.Conv2d(in_channels, out_channels, kernel_size,
-                                          stride=stride, padding=padding,
-                                          dilation=dilation, groups=groups, bias=True)
+            self.reparam_conv = nn.Conv2d(
+                in_channels,
+                out_channels,
+                kernel_size,
+                stride=stride,
+                padding=padding,
+                dilation=dilation,
+                groups=groups,
+                bias=True,
+            )
         else:
             # skip branch
             self.rbr_skip = nn.BatchNorm2d(in_channels) if (out_channels == in_channels and stride == 1) else None
             # conv branches
-            self.rbr_conv = nn.ModuleList([
-                self._conv_bn(kernel_size, padding) for _ in range(num_conv_branches)
-            ])
+            self.rbr_conv = nn.ModuleList([self._conv_bn(kernel_size, padding) for _ in range(num_conv_branches)])
             # scale branch
             self.rbr_scale = self._conv_bn(1, 0) if kernel_size > 1 else None
 
@@ -2206,22 +2214,26 @@ class MobileOneBlock(nn.Module):
             return
         kernel, bias = self._get_kernel_bias()
         self.reparam_conv = nn.Conv2d(
-            self.in_channels, self.out_channels, self.kernel_size,
-            stride=self.stride, padding=self.kernel_size // 2,
-            groups=self.groups, bias=True
+            self.in_channels,
+            self.out_channels,
+            self.kernel_size,
+            stride=self.stride,
+            padding=self.kernel_size // 2,
+            groups=self.groups,
+            bias=True,
         )
         self.reparam_conv.weight.data = kernel
         self.reparam_conv.bias.data = bias
         # 删除训练分支
         for para in self.parameters():
             para.detach_()
-        self.__delattr__('rbr_conv')
-        self.__delattr__('rbr_scale')
-        if hasattr(self, 'rbr_skip'):
-            self.__delattr__('rbr_skip')
+        self.__delattr__("rbr_conv")
+        self.__delattr__("rbr_scale")
+        if hasattr(self, "rbr_skip"):
+            self.__delattr__("rbr_skip")
         self.inference_mode = True
 
-    def _get_kernel_bias(self) -> Tuple[torch.Tensor, torch.Tensor]:
+    def _get_kernel_bias(self) -> tuple[torch.Tensor, torch.Tensor]:
         kernel_scale, bias_scale = 0, 0
         if self.rbr_scale is not None:
             kernel_scale, bias_scale = self._fuse_bn_tensor(self.rbr_scale)
@@ -2240,7 +2252,7 @@ class MobileOneBlock(nn.Module):
 
         return kernel_conv + kernel_scale + kernel_identity, bias_conv + bias_scale + bias_identity
 
-    def _fuse_bn_tensor(self, branch) -> Tuple[torch.Tensor, torch.Tensor]:
+    def _fuse_bn_tensor(self, branch) -> tuple[torch.Tensor, torch.Tensor]:
         if isinstance(branch, nn.Sequential):
             kernel = branch.conv.weight
             running_mean = branch.bn.running_mean
@@ -2250,11 +2262,12 @@ class MobileOneBlock(nn.Module):
             eps = branch.bn.eps
         else:  # BatchNorm skip
             assert isinstance(branch, nn.BatchNorm2d)
-            if not hasattr(self, 'id_tensor'):
+            if not hasattr(self, "id_tensor"):
                 input_dim = self.in_channels // self.groups
                 kernel_value = torch.zeros(
                     (self.in_channels, input_dim, self.kernel_size, self.kernel_size),
-                    dtype=branch.weight.dtype, device=branch.weight.device
+                    dtype=branch.weight.dtype,
+                    device=branch.weight.device,
                 )
                 for i in range(self.in_channels):
                     kernel_value[i, i % input_dim, self.kernel_size // 2, self.kernel_size // 2] = 1
@@ -2271,17 +2284,35 @@ class MobileOneBlock(nn.Module):
 
     def _conv_bn(self, kernel_size: int, padding: int) -> nn.Sequential:
         return nn.Sequential(
-            nn.Conv2d(self.in_channels, self.out_channels, kernel_size,
-                      stride=self.stride, padding=padding, groups=self.groups, bias=False),
-            nn.BatchNorm2d(self.out_channels)
+            nn.Conv2d(
+                self.in_channels,
+                self.out_channels,
+                kernel_size,
+                stride=self.stride,
+                padding=padding,
+                groups=self.groups,
+                bias=False,
+            ),
+            nn.BatchNorm2d(self.out_channels),
         )
 
 
 class C2f_MobileOne(nn.Module):
     """C2f with MobileOneBlock instead of Bottleneck."""
 
-    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5,
-                 kernel_size=3, num_conv_branches=1, use_se=False, inference_mode=False):
+    def __init__(
+        self,
+        c1,
+        c2,
+        n=1,
+        shortcut=False,
+        g=1,
+        e=0.5,
+        kernel_size=3,
+        num_conv_branches=1,
+        use_se=False,
+        inference_mode=False,
+    ):
         super().__init__()
         self.c = int(c2 * e)  # hidden channels
         self.cv1 = Conv(c1, 2 * self.c, 1, 1)
@@ -2296,8 +2327,9 @@ class C2f_MobileOne(nn.Module):
                 groups=1,  # 普通卷积；若想 depthwise 可设 groups=self.c
                 inference_mode=inference_mode,
                 use_se=use_se,
-                num_conv_branches=num_conv_branches
-            ) for _ in range(n)
+                num_conv_branches=num_conv_branches,
+            )
+            for _ in range(n)
         )
 
     def forward(self, x):
