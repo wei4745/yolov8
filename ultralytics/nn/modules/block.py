@@ -4,15 +4,13 @@
 from __future__ import annotations
 
 import math
+from typing import Tuple
 
 import torch
-import torch.nn.functional as F
-from torch import nn
-
 import torch.nn as nn
+import torch.nn.functional as F
 
 from ultralytics.utils.torch_utils import fuse_conv_and_bn
-
 from .conv import Conv, DWConv, GhostConv, LightConv, RepConv, autopad
 from .transformer import TransformerBlock
 
@@ -2134,3 +2132,180 @@ class CBAM(nn.Module):
         output = self.cam(x)
         output = self.sam(output)
         return output + x  # residual，保留原特征
+
+
+class SEBlock(nn.Module):
+    def __init__(self, in_channels: int, rd_ratio: float = 0.0625) -> None:
+        super().__init__()
+        self.reduce = nn.Conv2d(in_channels, int(in_channels * rd_ratio), 1, bias=True)
+        self.expand = nn.Conv2d(int(in_channels * rd_ratio), in_channels, 1, bias=True)
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        b, c, h, w = inputs.size()
+        x = F.avg_pool2d(inputs, kernel_size=[h, w])
+        x = self.reduce(x)
+        x = F.relu(x)
+        x = self.expand(x)
+        x = torch.sigmoid(x)
+        return inputs * x.view(-1, c, 1, 1)
+
+
+class MobileOneBlock(nn.Module):
+    """MobileOne building block (train multi-branch, inference reparam)."""
+
+    def __init__(self,
+                 in_channels: int,
+                 out_channels: int,
+                 kernel_size: int = 3,
+                 stride: int = 1,
+                 padding: int = 1,
+                 dilation: int = 1,
+                 groups: int = 1,
+                 inference_mode: bool = False,
+                 use_se: bool = False,
+                 num_conv_branches: int = 1) -> None:
+        super().__init__()
+        self.inference_mode = inference_mode
+        self.groups = groups
+        self.stride = stride
+        self.kernel_size = kernel_size
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.num_conv_branches = num_conv_branches
+
+        self.se = SEBlock(out_channels) if use_se else nn.Identity()
+        self.activation = nn.ReLU()
+
+        if inference_mode:
+            self.reparam_conv = nn.Conv2d(in_channels, out_channels, kernel_size,
+                                          stride=stride, padding=padding,
+                                          dilation=dilation, groups=groups, bias=True)
+        else:
+            # skip branch
+            self.rbr_skip = nn.BatchNorm2d(in_channels) if (out_channels == in_channels and stride == 1) else None
+            # conv branches
+            self.rbr_conv = nn.ModuleList([
+                self._conv_bn(kernel_size, padding) for _ in range(num_conv_branches)
+            ])
+            # scale branch
+            self.rbr_scale = self._conv_bn(1, 0) if kernel_size > 1 else None
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if self.inference_mode:
+            return self.activation(self.se(self.reparam_conv(x)))
+
+        identity_out = self.rbr_skip(x) if self.rbr_skip is not None else 0
+        scale_out = self.rbr_scale(x) if self.rbr_scale is not None else 0
+        out = scale_out + identity_out
+        for branch in self.rbr_conv:
+            out = out + branch(x)
+        return self.activation(self.se(out))
+
+    def reparameterize(self):
+        if self.inference_mode:
+            return
+        kernel, bias = self._get_kernel_bias()
+        self.reparam_conv = nn.Conv2d(
+            self.in_channels, self.out_channels, self.kernel_size,
+            stride=self.stride, padding=self.kernel_size // 2,
+            groups=self.groups, bias=True
+        )
+        self.reparam_conv.weight.data = kernel
+        self.reparam_conv.bias.data = bias
+        # 删除训练分支
+        for para in self.parameters():
+            para.detach_()
+        self.__delattr__('rbr_conv')
+        self.__delattr__('rbr_scale')
+        if hasattr(self, 'rbr_skip'):
+            self.__delattr__('rbr_skip')
+        self.inference_mode = True
+
+    def _get_kernel_bias(self) -> Tuple[torch.Tensor, torch.Tensor]:
+        kernel_scale, bias_scale = 0, 0
+        if self.rbr_scale is not None:
+            kernel_scale, bias_scale = self._fuse_bn_tensor(self.rbr_scale)
+            pad = self.kernel_size // 2
+            kernel_scale = F.pad(kernel_scale, [pad, pad, pad, pad])
+
+        kernel_identity, bias_identity = 0, 0
+        if self.rbr_skip is not None:
+            kernel_identity, bias_identity = self._fuse_bn_tensor(self.rbr_skip)
+
+        kernel_conv, bias_conv = 0, 0
+        for branch in self.rbr_conv:
+            k, b = self._fuse_bn_tensor(branch)
+            kernel_conv = kernel_conv + k
+            bias_conv = bias_conv + b
+
+        return kernel_conv + kernel_scale + kernel_identity, bias_conv + bias_scale + bias_identity
+
+    def _fuse_bn_tensor(self, branch) -> Tuple[torch.Tensor, torch.Tensor]:
+        if isinstance(branch, nn.Sequential):
+            kernel = branch.conv.weight
+            running_mean = branch.bn.running_mean
+            running_var = branch.bn.running_var
+            gamma = branch.bn.weight
+            beta = branch.bn.bias
+            eps = branch.bn.eps
+        else:  # BatchNorm skip
+            assert isinstance(branch, nn.BatchNorm2d)
+            if not hasattr(self, 'id_tensor'):
+                input_dim = self.in_channels // self.groups
+                kernel_value = torch.zeros(
+                    (self.in_channels, input_dim, self.kernel_size, self.kernel_size),
+                    dtype=branch.weight.dtype, device=branch.weight.device
+                )
+                for i in range(self.in_channels):
+                    kernel_value[i, i % input_dim, self.kernel_size // 2, self.kernel_size // 2] = 1
+                self.id_tensor = kernel_value
+            kernel = self.id_tensor
+            running_mean = branch.running_mean
+            running_var = branch.running_var
+            gamma = branch.weight
+            beta = branch.bias
+            eps = branch.eps
+        std = (running_var + eps).sqrt()
+        t = (gamma / std).reshape(-1, 1, 1, 1)
+        return kernel * t, beta - running_mean * gamma / std
+
+    def _conv_bn(self, kernel_size: int, padding: int) -> nn.Sequential:
+        return nn.Sequential(
+            nn.Conv2d(self.in_channels, self.out_channels, kernel_size,
+                      stride=self.stride, padding=padding, groups=self.groups, bias=False),
+            nn.BatchNorm2d(self.out_channels)
+        )
+
+
+class C2f_MobileOne(nn.Module):
+    """C2f with MobileOneBlock instead of Bottleneck."""
+
+    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5,
+                 kernel_size=3, num_conv_branches=1, use_se=False, inference_mode=False):
+        super().__init__()
+        self.c = int(c2 * e)  # hidden channels
+        self.cv1 = Conv(c1, 2 * self.c, 1, 1)
+        self.cv2 = Conv((2 + n) * self.c, c2, 1)
+        self.m = nn.ModuleList(
+            MobileOneBlock(
+                in_channels=self.c,
+                out_channels=self.c,
+                kernel_size=kernel_size,
+                stride=1,
+                padding=kernel_size // 2,
+                groups=1,  # 普通卷积；若想 depthwise 可设 groups=self.c
+                inference_mode=inference_mode,
+                use_se=use_se,
+                num_conv_branches=num_conv_branches
+            ) for _ in range(n)
+        )
+
+    def forward(self, x):
+        y = list(self.cv1(x).chunk(2, 1))
+        y.extend(m(y[-1]) for m in self.m)
+        return self.cv2(torch.cat(y, 1))
+
+    def forward_split(self, x):
+        y = list(self.cv1(x).split((self.c, self.c), 1))
+        y.extend(m(y[-1]) for m in self.m)
+        return self.cv2(torch.cat(y, 1))

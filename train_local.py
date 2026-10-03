@@ -2,8 +2,8 @@ from ultralytics import YOLO
 
 # 统一超参数
 # 放在ultralytics同级目录
-MODEL_CFG = "ultralytics/cfg/models/v8/yolov8s-p2-ca.yaml"  # 不加载预训练权重
-NAME = "yolov8s_p2_ca_test"  # 改名字区分
+MODEL_CFG = "ultralytics/cfg/models/v8/yolov8s-p2-mobileone.yaml"  # 不加载预训练权重
+NAME = "yolov8s_p2_mobileone_test"  # 改名字区分
 
 PROJECT = "runs/blueberry"
 DATA_YAML = "ultralytics/cfg/datasets/blueberry_local.yaml"
@@ -41,7 +41,7 @@ def main():
         lrf=0.01,  # 最终学习率 = lr0 * lrf
         momentum=0.937,
         weight_decay=0.0005,
-        warmup_epochs=3.0,
+        warmup_epochs=3,
         warmup_momentum=0.8,
         warmup_bias_lr=0.1,
         box=7.5,  # box loss gain

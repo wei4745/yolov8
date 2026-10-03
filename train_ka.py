@@ -1,3 +1,4 @@
+# /kaggle/working/runs  /kaggle/working/u/ultralytics/cfg/datasets/blueberry-ka.yaml
 import argparse
 
 from ultralytics import YOLO
@@ -19,8 +20,8 @@ def main():
     MODEL_CFG = args.model_cfg  # 不加载预训练权重
     NAME = args.name  # 改名字区分
 
-    PROJECT = "/content/drive/MyDrive/workspace/sonnet/runs/blueberry"
-    DATA_YAML = "/content/drive/MyDrive/workspace/sonnet/ultralytics/cfg/datasets/blueberry.yaml"
+    PROJECT = "/kaggle/working/runs"
+    DATA_YAML = "/kaggle/working/u/ultralytics/cfg/datasets/blueberry-ka.yaml"
     EPOCHS = 256
     IMGSZ = 1024
     BATCH = 2

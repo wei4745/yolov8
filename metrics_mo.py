@@ -1,6 +1,10 @@
 import argparse
+import copy
+
 import torch
 from thop import profile
+import torch.nn as nn
+
 from ultralytics import YOLO
 
 
@@ -10,11 +14,23 @@ def parse_args():
     return parser.parse_args()
 
 
+def reparameterize_model(model: nn.Module) -> nn.Module:
+    """官方风格，遍历所有 MobileOneBlock 并融合。"""
+    model = copy.deepcopy(model)
+    for module in model.modules():
+        if hasattr(module, 'reparameterize'):
+            module.reparameterize()
+    return model
+
+
 def main():
     args = parse_args()
     model_path = args.path
 
     model = YOLO(model_path)
+
+    model.model = reparameterize_model(model.model)
+
     # 只 fuse 一次，融合Conv+BN
     model.fuse()
     model.model.eval()
