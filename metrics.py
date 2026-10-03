@@ -1,6 +1,8 @@
 import argparse
+
 import torch
 from thop import profile
+
 from ultralytics import YOLO
 
 
@@ -37,9 +39,7 @@ def main():
     print(f"推理时间 : {metrics.speed['inference']:.2f} ms")
     print(f"后处理   : {metrics.speed['postprocess']:.2f} ms")
 
-    total_ms = (metrics.speed['preprocess'] +
-                metrics.speed['inference'] +
-                metrics.speed['postprocess'])
+    total_ms = metrics.speed["preprocess"] + metrics.speed["inference"] + metrics.speed["postprocess"]
     print(f"单图总耗时 : {total_ms:.2f} ms")
     # 真实FPS：包含预处理推理后处理
     print(f"FPS: {1000 / total_ms:.1f}")
@@ -63,5 +63,5 @@ def main():
         print(f"类别{idx:2d} mAP50‑95: {ap:.4f}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
