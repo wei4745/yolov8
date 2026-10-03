@@ -1,4 +1,4 @@
-import torch.nn as nn
+from torch import nn
 
 
 class GAM(nn.Module):
@@ -14,8 +14,8 @@ class GAM(nn.Module):
         self.linear2 = nn.Linear(inchannel_rate, in_channels)
 
         # Spatial attention
-        self.conv1 = nn.Conv2d(in_channels, inchannel_rate, kernel_size=7, padding=3, padding_mode='replicate')
-        self.conv2 = nn.Conv2d(inchannel_rate, out_channels, kernel_size=7, padding=3, padding_mode='replicate')
+        self.conv1 = nn.Conv2d(in_channels, inchannel_rate, kernel_size=7, padding=3, padding_mode="replicate")
+        self.conv2 = nn.Conv2d(inchannel_rate, out_channels, kernel_size=7, padding=3, padding_mode="replicate")
         self.norm1 = nn.BatchNorm2d(inchannel_rate)
         self.norm2 = nn.BatchNorm2d(out_channels)
         self.sigmoid = nn.Sigmoid()

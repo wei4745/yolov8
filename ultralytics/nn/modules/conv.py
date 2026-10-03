@@ -11,6 +11,7 @@ from torch import nn
 
 __all__ = (
     "CBAM",
+    "EMA",
     "ChannelAttention",
     "Concat",
     "Conv",
@@ -24,7 +25,6 @@ __all__ = (
     "LightConv",
     "RepConv",
     "SpatialAttention",
-    "EMA",
 )
 
 
@@ -142,7 +142,7 @@ class Conv2(Conv):
         """Fuse parallel convolutions."""
         w = torch.zeros_like(self.conv.weight.data)
         i = [x // 2 for x in w.shape[2:]]
-        w[:, :, i[0]: i[0] + 1, i[1]: i[1] + 1] = self.cv2.weight.data.clone()
+        w[:, :, i[0] : i[0] + 1, i[1] : i[1] + 1] = self.cv2.weight.data.clone()
         self.conv.weight.data += w
         self.__delattr__("cv2")
         self.forward = self.forward_fuse
@@ -673,7 +673,7 @@ class Index(nn.Module):
 
 class EMA(nn.Module):
     def __init__(self, channels, c2=None, factor=32):
-        super(EMA, self).__init__()
+        super().__init__()
         self.groups = factor
         assert channels // self.groups > 0
         self.softmax = nn.Softmax(-1)
