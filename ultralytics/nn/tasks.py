@@ -22,7 +22,10 @@ from ultralytics.nn.modules import (
     C2PSA,
     C3,
     C3TR,
+    ECA,
     ELAN1,
+    EMA,
+    GAM,
     OBB,
     OBB26,
     PSA,
@@ -78,13 +81,9 @@ from ultralytics.nn.modules import (
     YOLOESegment,
     YOLOESegment26,
     v10Detect,
-    EMA,
-    ECA,
-    GAM,
 )
-from ultralytics.nn.modules.coordatt import CoordAtt
 from ultralytics.nn.modules.block import CBAM, C2f_MobileOne
-
+from ultralytics.nn.modules.coordatt import CoordAtt
 from ultralytics.utils import (
     DEFAULT_CFG_DICT,
     LOGGER,
@@ -310,7 +309,7 @@ class BaseModel(torch.nn.Module):
         super()._apply(fn)
         m = self.model[-1]  # Detect()
         if isinstance(
-                m, Detect
+            m, Detect
         ):  # includes all Detect subclasses like Segment, Pose, OBB, WorldDetect, YOLOEDetect, YOLOESegment
             m.stride = fn(m.stride)
             m.anchors = fn(m.anchors)
@@ -597,9 +596,9 @@ class DetectionModel(BaseModel):
             (list[torch.Tensor]): Clipped detection tensors.
         """
         nl = self.model[-1].nl  # number of detection layers (P3-P5)
-        g = sum(4 ** x for x in range(nl))  # grid points
+        g = sum(4**x for x in range(nl))  # grid points
         e = 1  # exclude layer count
-        i = (y[0].shape[-1] // g) * sum(4 ** x for x in range(e))  # indices
+        i = (y[0].shape[-1] // g) * sum(4**x for x in range(e))  # indices
         y[0] = y[0][..., :-i]  # large
         i = (y[-1].shape[-1] // g) * sum(4 ** (nl - 1 - x) for x in range(e))  # indices
         y[-1] = y[-1][..., i:]  # small
@@ -1676,15 +1675,15 @@ class _SafeLoad:
             for name in needed:
                 module, _, attr = name.rpartition(".")
                 if name not in cls._registry and (
-                        module in {"torch.nn.modules", "ultralytics.nn.modules", "ultralytics.nn.tasks"}
-                        or module.rpartition(".")[0] in {"torch.nn.modules", "ultralytics.nn.modules"}
-                        or module in {"ultralytics.utils.loss", "ultralytics.utils.tal"}
+                    module in {"torch.nn.modules", "ultralytics.nn.modules", "ultralytics.nn.tasks"}
+                    or module.rpartition(".")[0] in {"torch.nn.modules", "ultralytics.nn.modules"}
+                    or module in {"ultralytics.utils.loss", "ultralytics.utils.tal"}
                 ):
                     obj = getattr(importlib.import_module(module), attr, None)
                     if isinstance(obj, type) and (
-                            obj.__module__ == module
-                            if module in {"ultralytics.utils.loss", "ultralytics.utils.tal"}
-                            else issubclass(obj, nn.Module)
+                        obj.__module__ == module
+                        if module in {"ultralytics.utils.loss", "ultralytics.utils.tal"}
+                        else issubclass(obj, nn.Module)
                     ):
                         cls._registry[name] = obj
             if any(name.startswith("torchvision.transforms.") for name in needed):
@@ -1700,14 +1699,14 @@ class _SafeLoad:
                 from ultralytics.nn.text_model import CLIP
 
                 for obj in (
-                        CLIP,
-                        clip.model.CLIP,
-                        clip.model.LayerNorm,
-                        clip.model.QuickGELU,
-                        clip.model.ResidualAttentionBlock,
-                        clip.model.Transformer,
-                        clip.model.VisionTransformer,
-                        clip.clip._convert_image_to_rgb,
+                    CLIP,
+                    clip.model.CLIP,
+                    clip.model.LayerNorm,
+                    clip.model.QuickGELU,
+                    clip.model.ResidualAttentionBlock,
+                    clip.model.Transformer,
+                    clip.model.VisionTransformer,
+                    clip.clip._convert_image_to_rgb,
                 ):
                     cls._registry[f"{obj.__module__}.{obj.__qualname__}"] = obj
             entries = [(cls._registry[name], name) for name in needed if name in cls._registry]
@@ -1835,22 +1834,22 @@ def torch_safe_load(weight, safe_only=None):
 
     def _load():
         with temporary_modules(
-                modules={
-                    "ultralytics.yolo.utils": "ultralytics.utils",
-                    "ultralytics.yolo.v8": "ultralytics.models.yolo",
-                    "ultralytics.yolo.data": "ultralytics.data",
-                },
-                attributes={
-                    "ultralytics.nn.modules.block.Silence": "torch.nn.Identity",  # YOLOv9e
-                    "ultralytics.nn.tasks.YOLOv10DetectionModel": "ultralytics.nn.tasks.DetectionModel",  # YOLOv10
-                    "ultralytics.utils.loss.v10DetectLoss": "ultralytics.utils.loss.E2EDetectLoss",  # YOLOv10
-                    # resolve cross-platform pathlib pickle incompatibility
-                    **(
-                            {"pathlib.PosixPath": "pathlib.WindowsPath"}
-                            if WINDOWS
-                            else {"pathlib.WindowsPath": "pathlib.PosixPath"}
-                    ),
-                },
+            modules={
+                "ultralytics.yolo.utils": "ultralytics.utils",
+                "ultralytics.yolo.v8": "ultralytics.models.yolo",
+                "ultralytics.yolo.data": "ultralytics.data",
+            },
+            attributes={
+                "ultralytics.nn.modules.block.Silence": "torch.nn.Identity",  # YOLOv9e
+                "ultralytics.nn.tasks.YOLOv10DetectionModel": "ultralytics.nn.tasks.DetectionModel",  # YOLOv10
+                "ultralytics.utils.loss.v10DetectLoss": "ultralytics.utils.loss.E2EDetectLoss",  # YOLOv10
+                # resolve cross-platform pathlib pickle incompatibility
+                **(
+                    {"pathlib.PosixPath": "pathlib.WindowsPath"}
+                    if WINDOWS
+                    else {"pathlib.WindowsPath": "pathlib.PosixPath"}
+                ),
+            },
         ):
             if safe_only:
                 with _SafeLoad.loading(file):  # weights_only load against the known-class allow-list
@@ -2156,19 +2155,19 @@ def parse_model(d, ch, verbose=True):
         elif m is Concat:
             c2 = sum(ch[x] for x in f)
         elif m in frozenset(
-                {
-                    Detect,
-                    WorldDetect,
-                    YOLOEDetect,
-                    Segment,
-                    Segment26,
-                    YOLOESegment,
-                    YOLOESegment26,
-                    Pose,
-                    Pose26,
-                    OBB,
-                    OBB26,
-                }
+            {
+                Detect,
+                WorldDetect,
+                YOLOEDetect,
+                Segment,
+                Segment26,
+                YOLOESegment,
+                YOLOESegment26,
+                Pose,
+                Pose26,
+                OBB,
+                OBB26,
+            }
         ):
             args.extend([reg_max, end2end, [ch[x] for x in f]])
             if m is Segment or m is YOLOESegment or m is Segment26 or m is YOLOESegment26:
