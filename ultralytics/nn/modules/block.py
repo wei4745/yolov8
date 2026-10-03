@@ -2241,23 +2241,40 @@ class MobileOneBlock(nn.Module):
         return kernel_conv + kernel_scale + kernel_identity, bias_conv + bias_scale + bias_identity
 
     def _fuse_bn_tensor(self, branch) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Method to fuse batchnorm layer with preceding conv layer.
+        兼容 named Sequential ('conv','bn') 和 unnamed Sequential ([0],[1])
+        """
         if isinstance(branch, nn.Sequential):
-            kernel = branch.conv.weight
-            running_mean = branch.bn.running_mean
-            running_var = branch.bn.running_var
-            gamma = branch.bn.weight
-            beta = branch.bn.bias
-            eps = branch.bn.eps
-        else:  # BatchNorm skip
+            # 优先尝试 named 方式
+            if hasattr(branch, 'conv') and hasattr(branch, 'bn'):
+                kernel = branch.conv.weight
+                running_mean = branch.bn.running_mean
+                running_var = branch.bn.running_var
+                gamma = branch.bn.weight
+                beta = branch.bn.bias
+                eps = branch.bn.eps
+            else:
+                # 兼容旧版 unnamed Sequential
+                kernel = branch[0].weight
+                running_mean = branch[1].running_mean
+                running_var = branch[1].running_var
+                gamma = branch[1].weight
+                beta = branch[1].bias
+                eps = branch[1].eps
+        else:
+            # skip branch (BatchNorm2d)
             assert isinstance(branch, nn.BatchNorm2d)
             if not hasattr(self, 'id_tensor'):
                 input_dim = self.in_channels // self.groups
                 kernel_value = torch.zeros(
                     (self.in_channels, input_dim, self.kernel_size, self.kernel_size),
-                    dtype=branch.weight.dtype, device=branch.weight.device
+                    dtype=branch.weight.dtype,
+                    device=branch.weight.device
                 )
                 for i in range(self.in_channels):
-                    kernel_value[i, i % input_dim, self.kernel_size // 2, self.kernel_size // 2] = 1
+                    kernel_value[i, i % input_dim,
+                                    self.kernel_size // 2,
+                                    self.kernel_size // 2] = 1
                 self.id_tensor = kernel_value
             kernel = self.id_tensor
             running_mean = branch.running_mean
@@ -2265,16 +2282,24 @@ class MobileOneBlock(nn.Module):
             gamma = branch.weight
             beta = branch.bias
             eps = branch.eps
+
         std = (running_var + eps).sqrt()
         t = (gamma / std).reshape(-1, 1, 1, 1)
         return kernel * t, beta - running_mean * gamma / std
 
     def _conv_bn(self, kernel_size: int, padding: int) -> nn.Sequential:
-        return nn.Sequential(
-            nn.Conv2d(self.in_channels, self.out_channels, kernel_size,
-                      stride=self.stride, padding=padding, groups=self.groups, bias=False),
-            nn.BatchNorm2d(self.out_channels)
-        )
+        mod_list = nn.Sequential()
+        mod_list.add_module('conv', nn.Conv2d(
+            in_channels=self.in_channels,
+            out_channels=self.out_channels,
+            kernel_size=kernel_size,
+            stride=self.stride,
+            padding=padding,
+            groups=self.groups,
+            bias=False
+        ))
+        mod_list.add_module('bn', nn.BatchNorm2d(num_features=self.out_channels))
+        return mod_list
 
 
 class C2f_MobileOne(nn.Module):
