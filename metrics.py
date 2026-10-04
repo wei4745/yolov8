@@ -7,12 +7,15 @@ from ultralytics import YOLO
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--path", type=str, required=True, help="模型路径，如 best.pt")
+    parser.add_argument("--name", type=str, required=True, help="验证实验名字")
+
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
     model_path = args.path
+    val_name = args.name
 
     model = YOLO(model_path)
     # 只 fuse 一次，融合Conv+BN
@@ -29,7 +32,15 @@ def main():
 
     print("\n测试集性能：")
     # 注意：数据集yaml必须有test字段，没有请改成 split="val"
-    metrics = model.val(batch=1, plots=False, imgsz=1024, split="test")
+    metrics = model.val(batch=1,
+                        plots=True,
+                        imgsz=1024,
+                        split="test",
+                        save_txt=True,
+                        save_conf=True,  # 可选，保存置信度
+                        name=val_name,  # 自定义名称
+                        project="/content/drive/MyDrive/workspace/val"  # 可选，自定义项目路径
+                        )
 
     print(f"mAP50-95 : {metrics.box.map:.4f}")
     print(f"mAP50    : {metrics.box.map50:.4f}")
