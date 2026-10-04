@@ -19,8 +19,8 @@ def main():
     MODEL_CFG = args.model_cfg  # 不加载预训练权重
     NAME = args.name  # 改名字区分
 
-    PROJECT = "/content/drive/MyDrive/workspace/sonnet/runs/blueberry"
-    DATA_YAML = "/content/drive/MyDrive/workspace/sonnet/ultralytics/cfg/datasets/blueberry.yaml"
+    PROJECT = "/content/drive/MyDrive/workspace/runs"
+    DATA_YAML = "/content/drive/MyDrive/workspace/u/ultralytics/cfg/datasets/blueberry.yaml"
     EPOCHS = 256
     IMGSZ = 1024
     BATCH = 2
