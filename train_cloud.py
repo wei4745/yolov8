@@ -20,7 +20,7 @@ def main():
     NAME = args.name  # 改名字区分
 
     PROJECT = "/content/drive/MyDrive/workspace/runs"
-    DATA_YAML = "/content/drive/MyDrive/workspace/u/ultralytics/cfg/datasets/blueberry.yaml"
+    DATA_YAML = "/content/yolov8/ultralytics/cfg/datasets/blueberry.yaml"
     EPOCHS = 256
     IMGSZ = 1024
     BATCH = 2
