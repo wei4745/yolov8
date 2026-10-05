@@ -4,6 +4,7 @@
 # Parameters
 nc: 2  # 改成你的类别数
 scales:
+  n: [0.33, 0.25, 1024]
   s: [ 0.33, 0.50, 1024 ]  # YOLOv8s
 
 # YOLOv8.0s backbone

@@ -1,6 +1,7 @@
-# yolov8s-cbam.yaml
+# yolov8-cbam.yaml
 nc: 80
 scales:
+  n: [0.33, 0.25, 1024]
   s: [ 0.33, 0.50, 1024 ]
 
 

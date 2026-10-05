@@ -2,7 +2,7 @@ from ultralytics import YOLO
 
 # 统一超参数
 # 放在ultralytics同级目录
-MODEL_CFG = "ultralytics/cfg/models/v8/yolov8s-p2-mobileone-ema.yaml"  # 不加载预训练权重
+MODEL_CFG = "ultralytics/cfg/models/v8/yolov8-p2-mobileone-ema.yaml"  # 不加载预训练权重
 NAME = "yolov8s_p2_mobileone_test"  # 改名字区分
 
 PROJECT = "runs/blueberry"

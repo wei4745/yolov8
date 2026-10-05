@@ -8,6 +8,7 @@ def parse_args():
     # 必须传入的两个参数
     parser.add_argument("--model-cfg", type=str, required=True, help="模型yaml路径，例如 cfg/models/v8/yolov8n-p2.yaml")
     parser.add_argument("--name", type=str, required=True, help="实验名称，输出文件夹名字")
+    parser.add_argument("--imgsz", type=int, required=True, help="输入图像大小")
 
     return parser.parse_args()
 
@@ -22,7 +23,7 @@ def main():
     PROJECT = "/content/drive/MyDrive/workspace/runs"
     DATA_YAML = "/content/yolov8/ultralytics/cfg/datasets/blueberry.yaml"
     EPOCHS = 256
-    IMGSZ = 1024
+    IMGSZ = args.imgsz
     BATCH = 2
     DEVICE = 0  # Tesla T4 单卡
     WORKERS = 4
