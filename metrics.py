@@ -8,6 +8,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--path", type=str, required=True, help="模型路径，如 best.pt")
     parser.add_argument("--name", type=str, required=True, help="验证实验名字")
+    parser.add_argument("--imgsz", type=int, required=True, help="输入图像大小")
 
     return parser.parse_args()
 
@@ -30,11 +31,13 @@ def main():
     print("模型复杂度(model.info):")
     model.info()
 
+    imgsz = args.imgsz
+
     print("\n测试集性能：")
     # 注意：数据集yaml必须有test字段，没有请改成 split="val"
     metrics = model.val(batch=1,
                         plots=True,
-                        imgsz=1024,
+                        imgsz=imgsz,
                         split="test",
                         save_txt=True,
                         save_conf=True,  # 可选，保存置信度
@@ -56,7 +59,7 @@ def main():
     print(f"FPS: {1000 / total_ms:.1f}")
 
     # 构造和模型同设备的dummy输入
-    dummy_input = torch.randn(1, 3, 1024, 1024).to(device)
+    dummy_input = torch.randn(1, 3, imgsz, imgsz).to(device)
     macs, params = profile(model.model, inputs=(dummy_input,), verbose=False)
 
     print("\n==== thop计算结果 ====")
