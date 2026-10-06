@@ -2,15 +2,15 @@ from ultralytics import YOLO
 
 # 统一超参数
 # 放在ultralytics同级目录
-MODEL_CFG = "ultralytics/cfg/models/v8/yolov8-p2-mobileone-ema.yaml"  # 不加载预训练权重
-NAME = "yolov8s_p2_mobileone_test"  # 改名字区分
+MODEL_CFG = "ultralytics/cfg/models/v8/yolov8n-mobileone.yaml"  # 不加载预训练权重
+NAME = "yolov8n_mobileone_300e"  # 改名字区分
 
 PROJECT = "runs/blueberry"
 DATA_YAML = "ultralytics/cfg/datasets/blueberry_local.yaml"
-EPOCHS = 256
-IMGSZ = 1024
+EPOCHS = 300
+IMGSZ = 800
 BATCH = 2
-DEVICE = "cpu"  # Tesla T4 单卡
+DEVICE = 0  # 单卡
 WORKERS = 0
 
 
@@ -36,7 +36,7 @@ def main():
         project=PROJECT,
         name=NAME,
         pretrained=False,  # 明确不使用预训练
-        optimizer="SGD",  # 统一优化器
+        optimizer="AdamW",  # 统一优化器 or SGD
         lr0=0.01,  # 初始学习率
         lrf=0.01,  # 最终学习率 = lr0 * lrf
         momentum=0.937,
@@ -60,7 +60,7 @@ def main():
         mosaic=1.0,
         mixup=0.0,  # 小目标建议关闭 mixup
         copy_paste=0.0,
-        close_mosaic=15,  # 关闭 mosaic
+        close_mosaic=20,  # 关闭 mosaic
         patience=50,  # early stopping
         save=True,
         save_period=-1,  # 只保存 best 和 last
