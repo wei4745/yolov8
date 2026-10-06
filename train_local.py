@@ -3,13 +3,13 @@ from ultralytics import YOLO
 # 统一超参数
 # 放在ultralytics同级目录
 MODEL_CFG = "ultralytics/cfg/models/v8/yolov8n-mobileone.yaml"  # 不加载预训练权重
-NAME = "yolov8n_mobileone_300e"  # 改名字区分
+NAME = "yolov8n_mobileone_300e_testest"  # 改名字区分
 
 PROJECT = "runs/blueberry"
 DATA_YAML = "ultralytics/cfg/datasets/blueberry_local.yaml"
 EPOCHS = 300
 IMGSZ = 800
-BATCH = 2
+BATCH = 4
 DEVICE = 0  # 单卡
 WORKERS = 0
 
@@ -36,7 +36,7 @@ def main():
         project=PROJECT,
         name=NAME,
         pretrained=False,  # 明确不使用预训练
-        optimizer="AdamW",  # 统一优化器 or SGD
+        optimizer="SGD",  # 统一优化器 or SGD
         lr0=0.01,  # 初始学习率
         lrf=0.01,  # 最终学习率 = lr0 * lrf
         momentum=0.937,

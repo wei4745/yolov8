@@ -23,9 +23,9 @@ def main():
 
     PROJECT = "/kaggle/working/runs"
     DATA_YAML = "/kaggle/working/u/ultralytics/cfg/datasets/blueberry-ka.yaml"
-    EPOCHS = 256
+    EPOCHS = 300
     IMGSZ = args.imgsz
-    BATCH = 2
+    BATCH = 4
     DEVICE = 0  # Tesla T4 单卡
     WORKERS = 4
 

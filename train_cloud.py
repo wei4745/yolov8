@@ -22,9 +22,9 @@ def main():
 
     PROJECT = "/content/drive/MyDrive/workspace/runs"
     DATA_YAML = "/content/yolov8/ultralytics/cfg/datasets/blueberry.yaml"
-    EPOCHS = 256
+    EPOCHS = 300
     IMGSZ = args.imgsz
-    BATCH = 2
+    BATCH = 4
     DEVICE = 0  # Tesla T4 单卡
     WORKERS = 4
 
