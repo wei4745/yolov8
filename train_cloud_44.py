@@ -1,20 +1,34 @@
+import argparse
+
 from ultralytics import YOLO
 
-# 统一超参数
-# 放在ultralytics同级目录
-MODEL_CFG = "ultralytics/cfg/models/v8/yolov8n-mobileone-ema.yaml"  # 不加载预训练权重
-NAME = "yolov8n_mobileone_ema_300e"  # 改名字区分
 
-PROJECT = "runs/blueberry"
-DATA_YAML = "ultralytics/cfg/datasets/blueberry_local.yaml"
-EPOCHS = 300
-IMGSZ = 800
-BATCH = 4
-DEVICE = 0  # 单卡
-WORKERS = 0
+def parse_args():
+    parser = argparse.ArgumentParser()
+    # 必须传入的两个参数
+    parser.add_argument("--model-cfg", type=str, required=True, help="模型yaml路径，例如 cfg/models/v8/yolov8n-p2.yaml")
+    parser.add_argument("--name", type=str, required=True, help="实验名称，输出文件夹名字")
+    parser.add_argument("--imgsz", type=int, required=True, help="输入图像大小")
+
+    return parser.parse_args()
 
 
 def main():
+    args = parse_args()
+
+    # 放在ultralytics同级目录
+    MODEL_CFG = args.model_cfg  # 不加载预训练权重
+    NAME = args.name  # 改名字区分
+
+    PROJECT = "/content/drive/MyDrive/workspace/runs"
+    DATA_YAML = "/content/yolov8/ultralytics/cfg/datasets/blueberry.yaml"
+    EPOCHS = 44
+    IMGSZ = args.imgsz
+    BATCH = 4
+    DEVICE = 0  # Tesla T4 单卡
+    WORKERS = 4
+
+    # 从 yaml 构建模型（scratch，不使用预训练权重）
     model = YOLO(MODEL_CFG)
     criterion = model.model.init_criterion()
 
@@ -36,7 +50,7 @@ def main():
         project=PROJECT,
         name=NAME,
         pretrained=False,  # 明确不使用预训练
-        optimizer="SGD",  # 统一优化器 or SGD
+        optimizer="SGD",  # 统一优化器
         lr0=0.01,  # 初始学习率
         lrf=0.01,  # 最终学习率 = lr0 * lrf
         momentum=0.937,
@@ -60,7 +74,7 @@ def main():
         mosaic=1.0,
         mixup=0.0,  # 小目标建议关闭 mixup
         copy_paste=0.0,
-        close_mosaic=20,  # 关闭 mosaic
+        close_mosaic=15,  # 关闭 mosaic
         patience=50,  # early stopping
         save=True,
         save_period=-1,  # 只保存 best 和 last
@@ -68,7 +82,6 @@ def main():
         verbose=True,
         seed=17,  # 固定随机种子，方便复现
         deterministic=True,
-
     )
 
 
