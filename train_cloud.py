@@ -78,7 +78,7 @@ def main():
         patience=50,  # early stopping
         save=True,
         save_period=-1,  # 只保存 best 和 last
-        exist_ok=True,
+        exist_ok=False,
         verbose=True,
         seed=17,  # 固定随机种子，方便复现
         deterministic=True,

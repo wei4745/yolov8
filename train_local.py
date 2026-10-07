@@ -2,8 +2,8 @@ from ultralytics import YOLO
 
 # 统一超参数
 # 放在ultralytics同级目录
-MODEL_CFG = "ultralytics/cfg/models/v8/yolov8n-mobileone-ema.yaml"  # 不加载预训练权重
-NAME = "yolov8n_mobileone_ema_300e"  # 改名字区分
+MODEL_CFG = "ultralytics/cfg/models/v8/yolov8n-p2-moca.yaml"  # 不加载预训练权重
+NAME = "yolov8n_mobileone_ca_300e_test"  # 改名字区分
 
 PROJECT = "runs/blueberry"
 DATA_YAML = "ultralytics/cfg/datasets/blueberry_local.yaml"
@@ -64,7 +64,7 @@ def main():
         patience=50,  # early stopping
         save=True,
         save_period=-1,  # 只保存 best 和 last
-        exist_ok=True,
+        exist_ok=False,
         verbose=True,
         seed=17,  # 固定随机种子，方便复现
         deterministic=True,
