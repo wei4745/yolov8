@@ -425,8 +425,8 @@ class v8DetectionLoss:
         )
         self.bbox_loss = BboxLoss(
             reg_max=m.reg_max,
-            nwd_loss=True,  # NWD开关
-            iou_ratio=0.4,  # 参数可调
+            nwd_loss=False,  # NWD开关
+            iou_ratio=0.5,  # 参数可调
             constant=12.8  # 可调
         ).to(device)
         self.proj = torch.arange(m.reg_max, dtype=torch.float, device=device)

@@ -2,8 +2,8 @@ from ultralytics import YOLO
 
 # 统一超参数
 # 放在ultralytics同级目录
-MODEL_CFG = "ultralytics/cfg/models/v8/yolov8n-moca.yaml"  # 不加载预训练权重
-NAME = "yolov8n_moca_nwd_300e"  # 改名字区分
+MODEL_CFG = "ultralytics/cfg/models/v8/yolov8-moca-dwpw.yaml"  # 不加载预训练权重
+NAME = "yolov8n_mocadp_300e"  # 改名字区分
 
 PROJECT = "runs/blueberry"
 DATA_YAML = "ultralytics/cfg/datasets/blueberry_local.yaml"
