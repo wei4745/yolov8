@@ -38,6 +38,7 @@ from ultralytics.nn.modules import (
     C2fAttn,
     C2fCIB,
     C2fPSA,
+    C2f_MobileOneCA_DWPW,
     C3Ghost,
     C3k2,
     C3x,
@@ -83,7 +84,7 @@ from ultralytics.nn.modules import (
     GAM,
 )
 from ultralytics.nn.modules.coordatt import CoordAtt
-from ultralytics.nn.modules.block import CBAM, C2f_MobileOne, C2f_MobileOneCA
+from ultralytics.nn.modules.block import CBAM, C2f_MobileOne, C2f_MobileOneCA, MobileOneBlock
 
 from ultralytics.utils import (
     DEFAULT_CFG_DICT,
@@ -273,6 +274,8 @@ class BaseModel(torch.nn.Module):
                 if isinstance(m, RepVGGDW):
                     m.fuse()
                     m.forward = m.forward_fuse
+                if isinstance(m, MobileOneBlock):
+                    m.reparameterize()
                 if isinstance(m, Detect):
                     m.fuse()  # remove the unused detection branch
             self.info(verbose=verbose, imgsz=imgsz)
@@ -284,6 +287,7 @@ class BaseModel(torch.nn.Module):
         return not any(
             (isinstance(m, (Conv, ConvTranspose)) and hasattr(m, "bn"))
             or (isinstance(m, (RepConv, RepVGGDW)) and hasattr(m, "conv1"))
+            or (isinstance(m, MobileOneBlock) and not m.inference_mode)
             or (isinstance(m, Detect) and m.cv2 is not None and getattr(m, "one2one_cv2", None) is not None)
             for m in self.modules()
         )
@@ -2076,6 +2080,7 @@ def parse_model(d, ch, verbose=True):
             A2C2f,
             C2f_MobileOne,
             C2f_MobileOneCA,
+            C2f_MobileOneCA_DWPW,
         }
     )
     repeat_modules = frozenset(  # modules with 'repeat' arguments
@@ -2097,6 +2102,7 @@ def parse_model(d, ch, verbose=True):
             A2C2f,
             C2f_MobileOne,
             C2f_MobileOneCA,
+            C2f_MobileOneCA_DWPW,
         }
     )
     for i, (f, n, m, args) in enumerate(d["backbone"] + d["head"]):  # from, number, module, args

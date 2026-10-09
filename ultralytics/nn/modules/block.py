@@ -39,6 +39,7 @@ __all__ = (
     "C2fAttn",
     "C2fCIB",
     "C2fPSA",
+    "C2f_MobileOneCA_DWPW",
     "C3Ghost",
     "C3k2",
     "C3x",
@@ -2211,7 +2212,7 @@ class MobileOneBlock(nn.Module):
             self.in_channels, self.out_channels, self.kernel_size,
             stride=self.stride, padding=self.kernel_size // 2,
             groups=self.groups, bias=True
-        )
+        ).to(device=kernel.device, dtype=kernel.dtype)
         self.reparam_conv.weight.data = kernel
         self.reparam_conv.bias.data = bias
         # 删除训练分支
@@ -2338,31 +2339,24 @@ class C2f_MobileOne(nn.Module):
         return self.cv2(torch.cat(y, 1))
 
 
-class C2f_MobileOneCA(nn.Module):
+class C2f_MobileOneCA(C2f_MobileOne):
     """C2f with MobileOneBlock + Coordinate Attention at the end (方案B)."""
 
-    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5,
-                 kernel_size=3, num_conv_branches=1, use_se=False,
-                 inference_mode=False, reduction=32):
-        super().__init__()
-        self.c = int(c2 * e)  # hidden channels
-        self.cv1 = Conv(c1, 2 * self.c, 1, 1)
-        self.cv2 = Conv((2 + n) * self.c, c2, 1)
-
-        # 内部仍然使用原来的 MobileOneBlock
-        self.m = nn.ModuleList(
-            MobileOneBlock(
-                in_channels=self.c,
-                out_channels=self.c,
-                kernel_size=kernel_size,
-                stride=1,
-                padding=kernel_size // 2,
-                groups=1,
-                inference_mode=inference_mode,
-                use_se=use_se,
-                num_conv_branches=num_conv_branches
-            ) for _ in range(n)
-        )
+    def __init__(
+        self,
+        c1,
+        c2,
+        n=1,
+        shortcut=False,
+        g=1,
+        e=0.5,
+        kernel_size=3,
+        num_conv_branches=1,
+        use_se=False,
+        inference_mode=False,
+        reduction=32,
+    ):
+        super().__init__(c1, c2, n, shortcut, g, e, kernel_size, num_conv_branches, use_se, inference_mode)
 
         # 方案B：只在最终输出加一次 CoordAtt
         self.ca = CoordAtt(inp=c2, oup=c2, reduction=reduction)
@@ -2376,3 +2370,63 @@ class C2f_MobileOneCA(nn.Module):
         y = list(self.cv1(x).split((self.c, self.c), 1))
         y.extend(m(y[-1]) for m in self.m)
         return self.ca(self.cv2(torch.cat(y, 1)))
+
+
+class C2f_MobileOneCA_DWPW(C2f_MobileOneCA):
+    """C2f with reparameterizable depthwise-pointwise pairs and output Coordinate Attention."""
+
+    def __init__(
+        self,
+        c1: int,
+        c2: int,
+        n: int = 1,
+        shortcut: bool = False,
+        g: int = 1,
+        e: float = 0.5,
+        kernel_size: int = 3,
+        num_conv_branches: int = 1,
+        use_se: bool = False,
+        inference_mode: bool = False,
+        reduction: int = 32,
+    ):
+        """Initialize DW-PW pairs with the same outer C2f and CA structure as the dense variant.
+
+        Args:
+            c1 (int): Input channels.
+            c2 (int): Output channels.
+            n (int): Number of depthwise-pointwise pairs.
+            shortcut (bool): Unused, retained to match the dense variant's YAML argument order.
+            g (int): Unused; depthwise groups equal hidden channels and pointwise groups equal one.
+            e (float): Hidden channel expansion ratio.
+            kernel_size (int): Depthwise convolution kernel size.
+            num_conv_branches (int): Training convolution branches per MobileOneBlock.
+            use_se (bool): Enable SE in each MobileOneBlock.
+            inference_mode (bool): Initialize single-branch inference convolutions.
+            reduction (int): Coordinate Attention channel reduction ratio.
+        """
+        super().__init__(c1, c2, n, shortcut, g, e, kernel_size, num_conv_branches, use_se, inference_mode, reduction)
+        self.m = nn.ModuleList(
+            nn.Sequential(
+                MobileOneBlock(
+                    self.c,
+                    self.c,
+                    kernel_size,
+                    padding=kernel_size // 2,
+                    groups=self.c,
+                    inference_mode=inference_mode,
+                    use_se=use_se,
+                    num_conv_branches=num_conv_branches,
+                ),
+                MobileOneBlock(
+                    self.c,
+                    self.c,
+                    1,
+                    padding=0,
+                    groups=1,
+                    inference_mode=inference_mode,
+                    use_se=use_se,
+                    num_conv_branches=num_conv_branches,
+                ),
+            )
+            for _ in range(n)
+        )
