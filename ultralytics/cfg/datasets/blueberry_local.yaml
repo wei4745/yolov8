@@ -1,6 +1,6 @@
-path: datasets/blueberry_dj # dataset root dir
-train: images/train # train images (relative to 'path') 128 images
-val: images/val # val images (relative to 'path') 128 images
+path: D:/pythonProject/newultralytics/datasets/blueberry_dj # dataset root dir
+train: images/train # train images (relative to 'path') 424 images
+val: images/val # val images (relative to 'path') 121 images
 test: images/test # test images (optional)
 
 # Classes

@@ -13,7 +13,7 @@ import torch.nn.functional as F
 from ultralytics.utils.torch_utils import fuse_conv_and_bn
 from ultralytics.nn.modules.coordatt import CoordAtt
 
-from .conv import Conv, DWConv, GhostConv, LightConv, RepConv, autopad
+from .conv import Conv, DWConv, EMA, GhostConv, LightConv, RepConv, autopad
 from .transformer import TransformerBlock
 
 __all__ = (
@@ -39,6 +39,7 @@ __all__ = (
     "C2fAttn",
     "C2fCIB",
     "C2fPSA",
+    "C2f_EMA",
     "C2f_MobileOneCA_DWPW",
     "C3Ghost",
     "C3k2",
@@ -322,6 +323,29 @@ class C2f(nn.Module):
         y = self.cv1(x).split((self.c, self.c), 1)
         y = [y[0], y[1]]
         y.extend(m(y[-1]) for m in self.m)
+        return self.cv2(torch.cat(y, 1))
+
+
+class C2f_EMA(C2f):
+    """C2f bottleneck with efficient multi-scale attention applied to its last block."""
+
+    def __init__(self, c1: int, c2: int, n: int = 1, shortcut: bool = False, g: int = 1, e: float = 0.5):
+        """Initialize a C2f module and attach an EMA module to its hidden channels."""
+        super().__init__(c1, c2, n, shortcut, g, e)
+        self.ema = EMA(self.c)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Perform a C2f forward pass with EMA applied to the last bottleneck output."""
+        y = list(self.cv1(x).chunk(2, 1))
+        for i, m in enumerate(self.m):
+            y.append(self.ema(m(y[-1])) if i == len(self.m) - 1 else m(y[-1]))
+        return self.cv2(torch.cat(y, 1))
+
+    def forward_split(self, x: torch.Tensor) -> torch.Tensor:
+        """Perform a split-based C2f forward pass with EMA applied to the last bottleneck output."""
+        y = list(self.cv1(x).split((self.c, self.c), 1))
+        for i, m in enumerate(self.m):
+            y.append(self.ema(m(y[-1])) if i == len(self.m) - 1 else m(y[-1]))
         return self.cv2(torch.cat(y, 1))
 
 
