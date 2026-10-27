@@ -674,8 +674,8 @@ class Index(nn.Module):
 class EMA(nn.Module):
     def __init__(self, channels, c2=None, factor=32):
         super(EMA, self).__init__()
-        self.groups = factor
-        assert channels // self.groups > 0
+        assert channels > 0 and factor > 0
+        self.groups = math.gcd(channels, factor)
         self.softmax = nn.Softmax(-1)
         self.agp = nn.AdaptiveAvgPool2d((1, 1))
         self.pool_h = nn.AdaptiveAvgPool2d((None, 1))
