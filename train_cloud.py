@@ -30,6 +30,9 @@ def main():
 
     # 从 yaml 构建模型（scratch，不使用预训练权重）
     model = YOLO(MODEL_CFG)
+
+    # model.load("yolov8n.pt")
+
     criterion = model.model.init_criterion()
 
     print("=" * 50)

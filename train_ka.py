@@ -1,4 +1,3 @@
-# /kaggle/working/runs  /kaggle/working/u/ultralytics/cfg/datasets/blueberry-ka.yaml
 import argparse
 
 from ultralytics import YOLO

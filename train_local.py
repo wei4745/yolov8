@@ -1,20 +1,31 @@
 from ultralytics import YOLO
 
-MODEL_CFG = "ultralytics/cfg/models/v8/sod-yolov8s.yaml"
-NAME = "sodyolov8s_blueberry_200e"
+# 统一超参数
+# 放在ultralytics同级目录
+MODEL_CFG = "ultralytics/cfg/models/v8/yolov8n.yaml"  # 不加载预训练权重
+NAME = "yolov8n_nwd_r0point4_c10point5_300e"  # 改名字区分
 
-PROJECT = "runs/sodyolo"
+PROJECT = "runs/blueberry"
 DATA_YAML = "ultralytics/cfg/datasets/blueberry_local.yaml"
-EPOCHS = 200
-IMGSZ = 640
-BATCH = 1
+EPOCHS = 300
+IMGSZ = 800
+BATCH = 4
 DEVICE = 0  # 单卡
 WORKERS = 0
 
 
 def main():
     model = YOLO(MODEL_CFG)
+    criterion = model.model.init_criterion()
 
+    print("=" * 50)
+    print("NWD 启用状态检查：")
+    print(f"nwd_loss   : {criterion.bbox_loss.nwd_loss}")
+    print(f"iou_ratio  : {criterion.bbox_loss.iou_ratio}")
+    print(f"constant   : {criterion.bbox_loss.constant}")
+    print("=" * 50)
+
+    # 开始训练
     model.train(
         data=DATA_YAML,
         epochs=EPOCHS,
@@ -24,8 +35,8 @@ def main():
         workers=WORKERS,
         project=PROJECT,
         name=NAME,
-        pretrained=False,
-        optimizer="SGD",
+        pretrained=False,  # 明确不使用预训练
+        optimizer="SGD",  # 统一优化器 or SGD
         lr0=0.01,  # 初始学习率
         lrf=0.01,  # 最终学习率 = lr0 * lrf
         momentum=0.937,
@@ -49,14 +60,15 @@ def main():
         mosaic=1.0,
         mixup=0.0,  # 小目标建议关闭 mixup
         copy_paste=0.0,
-        close_mosaic=20,
-        patience=0,  # train the full 200 epochs
+        close_mosaic=20,  # 关闭 mosaic
+        patience=50,  # early stopping
         save=True,
         save_period=-1,  # 只保存 best 和 last
         exist_ok=False,
         verbose=True,
         seed=17,  # 固定随机种子，方便复现
         deterministic=True,
+
     )
 
 

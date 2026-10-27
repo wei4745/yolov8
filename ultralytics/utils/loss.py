@@ -15,7 +15,7 @@ from ultralytics.utils.ops import crop_mask, xywh2xyxy, xyxy2xywh
 from ultralytics.utils.tal import RotatedTaskAlignedAssigner, TaskAlignedAssigner, dist2bbox, dist2rbox, make_anchors
 from ultralytics.utils.torch_utils import autocast
 
-from .metrics import piou, probiou
+from .metrics import bbox_iou, probiou, piou
 from .tal import bbox2dist, rbox2dist
 
 
@@ -159,8 +159,26 @@ class BboxLoss(nn.Module):
         fg_mask = fg_mask.nonzero(as_tuple=True)  # index once; long-index gathers and their backward do not sync
         weight = target_scores[fg_mask].sum(-1, keepdim=True)
 
-        piou_loss = piou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, PIoU2=True, Lambda=1.2)
-        loss_iou = (piou_loss * weight).sum() / target_scores_sum
+        """
+        开关 use CIoU (default), or SIoU, or PIoU v2, or EIoU
+        """
+        iou = bbox_iou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, CIoU=True)
+
+        # iou = bbox_iou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, SIoU=True)
+
+        # PIoU v2 非单调聚焦
+        # iou = 1 - piou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, PIoU2=True)
+
+        # 这里：EIoU=True, Focal=True 使用 Focal-EIoU；EIoU=True, Focal=False 使用纯 EIoU
+        # iou = bbox_iou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, EIoU=True, Focal=False)
+
+        if type(iou) is tuple:
+            if len(iou) == 2:
+                loss_iou = ((1.0 - iou[0]) * iou[1].detach() * weight).sum() / target_scores_sum
+            else:
+                loss_iou = (iou[0] * iou[1] * weight).sum() / target_scores_sum
+        else:
+            loss_iou = ((1.0 - iou) * weight).sum() / target_scores_sum
 
         if self.nwd_loss:
             nwd = self.wasserstein_loss(pred_bboxes[fg_mask], target_bboxes[fg_mask])
@@ -405,7 +423,12 @@ class v8DetectionLoss:
             stride=self.stride.tolist(),
             topk2=tal_topk2,
         )
-        self.bbox_loss = BboxLoss(reg_max=m.reg_max).to(device)
+        self.bbox_loss = BboxLoss(
+            reg_max=m.reg_max,
+            nwd_loss=True,  # NWD开关
+            iou_ratio=0.4,  # 参数可调
+            constant=10.5  # 可调
+        ).to(device)
         self.proj = torch.arange(m.reg_max, dtype=torch.float, device=device)
 
     def preprocess(self, targets: torch.Tensor, batch_size: int, scale_tensor: torch.Tensor) -> torch.Tensor:
