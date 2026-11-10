@@ -2,8 +2,8 @@ from ultralytics import YOLO
 
 # 统一超参数
 # 放在ultralytics同级目录
-MODEL_CFG = "ultralytics/cfg/models/v8/yolov8n.yaml"  # 不加载预训练权重
-NAME = "yolov8n_nwd_r0point4_c10point5_300e"  # 改名字区分
+MODEL_CFG = "ultralytics/cfg/models/v10/yolov10n.yaml"  # 不加载预训练权重
+NAME = "yolov10n_300e"  # 改名字区分
 
 PROJECT = "runs/blueberry"
 DATA_YAML = "ultralytics/cfg/datasets/blueberry_local.yaml"
@@ -18,12 +18,12 @@ def main():
     model = YOLO(MODEL_CFG)
     criterion = model.model.init_criterion()
 
-    print("=" * 50)
-    print("NWD 启用状态检查：")
-    print(f"nwd_loss   : {criterion.bbox_loss.nwd_loss}")
-    print(f"iou_ratio  : {criterion.bbox_loss.iou_ratio}")
-    print(f"constant   : {criterion.bbox_loss.constant}")
-    print("=" * 50)
+    # print("=" * 50)
+    # print("NWD 启用状态检查：")
+    # print(f"nwd_loss   : {criterion.bbox_loss.nwd_loss}")
+    # print(f"iou_ratio  : {criterion.bbox_loss.iou_ratio}")
+    # print(f"constant   : {criterion.bbox_loss.constant}")
+    # print("=" * 50)
 
     # 开始训练
     model.train(

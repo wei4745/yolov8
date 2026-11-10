@@ -425,7 +425,7 @@ class v8DetectionLoss:
         )
         self.bbox_loss = BboxLoss(
             reg_max=m.reg_max,
-            nwd_loss=True,  # NWD开关
+            nwd_loss=False,  # NWD开关
             iou_ratio=0.4,  # 参数可调
             constant=10.5  # 可调
         ).to(device)
